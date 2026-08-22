@@ -25,18 +25,18 @@ jobs:
 
       - name: Validate MongoDB secret
         env:
-          MONGO_URI: ${{ secrets.MONGO_URI_TEST }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
         run: |
           if [[ "$MONGO_URI" == mongodb+srv://* || "$MONGO_URI" == mongodb://* ]]; then
             echo "MongoDB URI format is correct."
           else
-            echo "ERROR: MONGO_URI_TEST does not start with mongodb:// or mongodb+srv://"
+            echo "ERROR: MONGO_URI does not start with mongodb:// or mongodb+srv://"
             exit 1
           fi
 
       - name: Run tests
         env:
-          MONGO_URI: ${{ secrets.MONGO_URI_TEST }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY_FLASK }}
         run: |
           pytest -v

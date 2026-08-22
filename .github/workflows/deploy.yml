@@ -23,6 +23,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Validate MongoDB secret
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI_TEST }}
+        run: |
+          if [[ "$MONGO_URI" == mongodb+srv://* || "$MONGO_URI" == mongodb://* ]]; then
+            echo "MongoDB URI format is correct."
+          else
+            echo "ERROR: MONGO_URI_TEST does not start with mongodb:// or mongodb+srv://"
+            exit 1
+          fi
+
       - name: Run tests
         env:
           MONGO_URI: ${{ secrets.MONGO_URI_TEST }}

@@ -10,9 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+
+      # =========================================================
+      # 1. CHECKOUT
+      # =========================================================
+      - name: Checkout source code
         uses: actions/checkout@v4
 
+      # =========================================================
+      # 2. INSTALL DEPENDENCIES
+      # =========================================================
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -23,28 +30,43 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # =========================================================
+      # 3. TEST
+      # If pytest fails, GitHub Actions stops here.
+      # =========================================================
       - name: Validate MongoDB secret
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}
         run: |
           if [[ "$MONGO_URI" == mongodb+srv://* || "$MONGO_URI" == mongodb://* ]]; then
-            echo "MongoDB URI format is correct."
+            echo "MongoDB URI format is valid."
           else
-            echo "ERROR: MONGO_URI does not start with mongodb:// or mongodb+srv://"
+            echo "ERROR: Invalid MongoDB URI."
             exit 1
           fi
 
-      - name: Run tests
+      - name: Run pytest
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}
           SECRET_KEY: ${{ secrets.SECRET_KEY_FLASK }}
         run: |
           pytest -v
 
+      # =========================================================
+      # 4. BUILD
+      # Image is tagged with the Git commit SHA.
+      # =========================================================
       - name: Build Docker image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t flask-student-app:latest .
+          docker build \
+            -t flask-student-app:$IMAGE_TAG \
+            .
 
+      # =========================================================
+      # 5. PUSH TO ECR
+      # =========================================================
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -56,11 +78,176 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Tag and push Docker image to ECR
+      - name: Push Docker image to ECR
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: cicd-git-repo
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker tag flask-student-app:latest $REGISTRY/$REPOSITORY:$IMAGE_TAG
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker tag \
+            flask-student-app:$IMAGE_TAG \
+            $REGISTRY/$REPOSITORY:$IMAGE_TAG
+
+          docker push \
+            $REGISTRY/$REPOSITORY:$IMAGE_TAG
+
+      # =========================================================
+      # 6. DEPLOY TO EC2 USING SSM
+      # =========================================================
+      - name: Deploy to EC2
+        env:
+          AWS_REGION: us-east-1
+          INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+          ECR_REGISTRY: 444068947659.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY: cicd-git-repo
+          IMAGE_TAG: ${{ github.sha }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY_FLASK }}
+        run: |
+
+          echo "Deploying commit: $IMAGE_TAG"
+
+          COMMAND_ID=$(aws ssm send-command \
+            --region "$AWS_REGION" \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters commands="[
+              \"set -e\",
+              \"echo 'Logging into ECR...'\",
+              \"aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY\",
+              \"echo 'Pulling image...'\",
+              \"docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\",
+              \"echo 'Stopping existing container...'\",
+              \"docker stop flask-student-container || true\",
+              \"echo 'Removing existing container...'\",
+              \"docker rm flask-student-container || true\",
+              \"echo 'Starting new container...'\",
+              \"docker run -d --name flask-student-container -p 5000:5000 -e MONGO_URI='$MONGO_URI' -e SECRET_KEY='$SECRET_KEY' $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\",
+              \"echo 'Waiting for application startup...'\",
+              \"sleep 10\",
+              \"echo 'Checking container status...'\",
+              \"docker inspect -f '{{.State.Running}}' flask-student-container\",
+              \"echo 'Checking health endpoint...'\",
+              \"curl --fail --silent --show-error http://localhost:5000/health\",
+              \"echo 'Deployment health check passed.'\"
+            ]" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM Command ID: $COMMAND_ID"
+
+          for i in {1..30}; do
+
+            STATUS=$(aws ssm get-command-invocation \
+              --region "$AWS_REGION" \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query "Status" \
+              --output text)
+
+            echo "Deployment status: $STATUS"
+
+            if [[ "$STATUS" == "Success" ]]; then
+              echo "Deployment successful."
+              exit 0
+            fi
+
+            if [[ "$STATUS" == "Failed" ||
+                  "$STATUS" == "Cancelled" ||
+                  "$STATUS" == "TimedOut" ]]; then
+
+              echo "Deployment failed."
+
+              aws ssm get-command-invocation \
+                --region "$AWS_REGION" \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID"
+
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+          echo "Deployment timed out."
+          exit 1
+
+      # =========================================================
+      # 7. SUCCESS EMAIL
+      # =========================================================
+      - name: Send success notification
+        if: success()
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: ${{ secrets.MAIL_PORT }}
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "SUCCESS - Flask Deployment - ${{ github.sha }}"
+          to: ${{ secrets.MAIL_TO }}
+          from: ${{ secrets.MAIL_USERNAME }}
+          body: |
+            Flask CI/CD deployment completed successfully.
+
+            Repository:
+            ${{ github.repository }}
+
+            Branch:
+            ${{ github.ref_name }}
+
+            Commit SHA:
+            ${{ github.sha }}
+
+            Docker Image:
+            444068947659.dkr.ecr.us-east-1.amazonaws.com/cicd-git-repo:${{ github.sha }}
+
+            EC2 Instance:
+            ${{ secrets.EC2_INSTANCE_ID }}
+
+            Deployment:
+            SUCCESS
+
+            Health Check:
+            /health PASSED
+
+            Pipeline Run:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      # =========================================================
+      # 7. FAILURE EMAIL
+      # =========================================================
+      - name: Send failure notification
+        if: failure()
+        uses: dawidd6/action-send-mail@v6
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: ${{ secrets.MAIL_PORT }}
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "FAILED - Flask CI/CD Pipeline - ${{ github.sha }}"
+          to: ${{ secrets.MAIL_TO }}
+          from: ${{ secrets.MAIL_USERNAME }}
+          body: |
+            Flask CI/CD pipeline FAILED.
+
+            Repository:
+            ${{ github.repository }}
+
+            Branch:
+            ${{ github.ref_name }}
+
+            Commit SHA:
+            ${{ github.sha }}
+
+            Docker Image:
+            444068947659.dkr.ecr.us-east-1.amazonaws.com/cicd-git-repo:${{ github.sha }}
+
+            EC2 Instance:
+            ${{ secrets.EC2_INSTANCE_ID }}
+
+            IMPORTANT:
+            Check the GitHub Actions run to identify the failed stage:
+            TEST / BUILD / PUSH / DEPLOY
+
+            Pipeline Run:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

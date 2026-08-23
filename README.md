@@ -1,12 +1,541 @@
-1. Project Overview
+# CI/CD Deployment – Flask Student Registration Application
 
-This project implements an end-to-end CI/CD pipeline for a Flask-based Student Registration Application.
+## Step 1 – Clone the Application Repository
 
-The pipeline automates the process of taking application changes from GitHub, testing and containerizing the application, pushing the Docker image to Amazon ECR, deploying it to an Amazon EC2 instance, verifying the deployment, and sending an email notification.
+The Flask Student Registration application source code was cloned from the GitHub repository to begin the deployment and CI/CD implementation.
 
-CI/CD Flow
-Developer Pushes Code
+**Evidence – `1.) Git Clone.png`**
+
+![Git Clone](./screenshots/1.%29%20Git%20Clone.png)
+
+---
+
+## Step 2 – Install Python Dependencies
+
+The application's required Python packages were installed from the `requirements.txt` file.
+
+```bash
+pip install -r requirements.txt
+```
+
+This ensured that all dependencies required by the Flask application were available before testing and containerization.
+
+**Evidence – `2.) Requirements downloaded.png`**
+
+![Requirements downloaded](./screenshots/2.%29%20Requirements%20downloaded.png)
+
+---
+
+## Step 3 – Create the MongoDB Cluster
+
+A MongoDB cluster was created to provide the database backend required by the Flask Student Registration application.
+
+**Evidence – `3.)Cluster created.png`**
+
+![Cluster created](./screenshots/3.%29Cluster%20created.png)
+
+---
+
+## Step 4 – Run the Application
+
+The Flask Student Registration application was started and verified to ensure that the application was functioning before containerization.
+
+**Evidence – `4.)Application running.png`**
+
+![Application running](./screenshots/4.%29Application%20running.png)
+
+---
+
+## Step 5 – Verify Data Storage in MongoDB
+
+Application data was submitted through the Student Registration application and verified in MongoDB.
+
+This confirmed that the Flask application was successfully communicating with the MongoDB database and storing application data.
+
+**Evidence – `5.) Values stored in MongoDB.png`**
+
+![Values stored in MongoDB](./screenshots/5.%29%20Values%20stored%20in%20MongoDB.png)
+
+---
+
+## Step 6 – Verify MongoDB Cluster Health
+
+The MongoDB cluster health and available nodes were checked to confirm that the database infrastructure was operational.
+
+**Evidence – `6.) Health nodes.png`**
+
+![Health nodes](./screenshots/6.%29%20Health%20nodes.png)
+
+---
+
+## Step 7 – Run the Application Test Suite
+
+The application test suite was executed using `pytest`.
+
+```bash
+pytest
+```
+
+The tests completed successfully.
+
+Testing was also incorporated into the CI/CD pipeline as a mandatory gate. If the test stage fails, the pipeline stops and does not continue to the Docker build, ECR push, or EC2 deployment stages.
+
+**Evidence – `7.)Test Passed.png`**
+
+![Test Passed](./screenshots/7.%29Test%20Passed.png)
+
+---
+
+## Step 8 – Create the Docker Ignore Configuration
+
+A `.dockerignore` file was created to prevent unnecessary files and directories from being included in the Docker build context.
+
+**Evidence – `8.)Created Docker ignore file.png`**
+
+![Created Docker ignore file](./screenshots/8.%29Created%20Docker%20ignore%20file.png)
+
+---
+
+## Step 9 – Create the Dockerfile
+
+A Dockerfile was created to containerize the Flask application.
+
+The Dockerfile defines the application environment, dependencies, application files, exposed application port, and command used to start the Flask application.
+
+**Evidence – `9.)Dockerfile created.png`**
+
+![Dockerfile created](./screenshots/9.%29Dockerfile%20created.png)
+
+---
+
+## Step 10 – Build the Docker Image
+
+The Flask application was successfully packaged into a Docker image.
+
+The Docker image was built locally before integrating the Docker build process into GitHub Actions.
+
+**Evidence – `10.)Docker image created.png`**
+
+![Docker image created](./screenshots/10.%29Docker%20image%20created.png)
+
+---
+
+## Step 11 – Verify the Docker Container
+
+The Docker image was used to start a container locally.
+
+The container was checked to confirm that the Flask application was running correctly inside Docker.
+
+**Evidence – `11.)Checking docker container working.png`**
+
+![Checking docker container working](./screenshots/11.%29Checking%20docker%20container%20working.png)
+
+---
+
+## Step 12 – Push the Application Source Code to GitHub
+
+The application source code, Dockerfile, `.dockerignore`, test files, and related configuration were committed and pushed to the GitHub repository.
+
+GitHub was established as the source repository for the CI/CD pipeline.
+
+**Evidence – `12.)Push to Github.png`**
+
+![Push to Github](./screenshots/12.%29Push%20to%20Github.png)
+
+---
+
+## Step 13 – Create the GitHub Actions Workflow
+
+A GitHub Actions workflow was created to automate the application build and deployment process.
+
+The workflow was designed to execute the required stages in sequence:
+
+```text
+Checkout
+    ↓
+Install Dependencies
+    ↓
+Test
+    ↓
+Docker Build
+    ↓
+Push to Amazon ECR
+    ↓
+Deploy to EC2
+    ↓
+Application Verification
+    ↓
+Email Notification
+```
+
+**Evidence – `13.)Create workflow.png`**
+
+![Create workflow](./screenshots/13.%29Create%20workflow.png)
+
+---
+
+## Step 14 – Configure GitHub Repository Secrets
+
+Sensitive configuration values required by the CI/CD pipeline were stored as GitHub repository secrets instead of being hardcoded in the workflow.
+
+The secrets configuration covers AWS authentication, deployment access, and SMTP email notification.
+
+**Evidence – `14.)Secrets created.png`**
+
+![Secrets created](./screenshots/14.%29Secrets%20created.png)
+
+---
+
+## Step 15 – Configure Docker for GitHub Actions
+
+Docker was configured and verified on the GitHub Actions runner.
+
+This allows the CI/CD workflow to automatically build Docker images during pipeline execution.
+
+**Evidence – `15.)Docker working on GitHub actions.png`**
+
+![Docker working on GitHub actions](./screenshots/15.%29Docker%20working%20on%20GitHub%20actions.png)
+
+---
+
+## Step 16 – Create the Amazon ECR Repository
+
+An Amazon Elastic Container Registry repository was created to store the Docker images produced by GitHub Actions.
+
+```text
+Repository: cicd-git-repo
+Region: us-east-1
+```
+
+Amazon ECR acts as the image registry between the GitHub Actions pipeline and the EC2 deployment environment.
+
+**Evidence – `16.)ECR repo created.png`**
+
+![ECR repo created](./screenshots/16.%29ECR%20repo%20created.png)
+
+---
+
+## Step 17 – Configure AWS Credentials in GitHub
+
+AWS credentials required by GitHub Actions were configured as GitHub repository secrets.
+
+The credentials allow the workflow to authenticate with AWS and perform the required ECR and EC2 deployment operations.
+
+AWS credentials were not hardcoded in the workflow file.
+
+**Evidence – `17.)AWS secret access key created in Github.png`**
+
+![AWS secret access key created in Github](./screenshots/17.%29AWS%20secret%20access%20key%20created%20in%20Github.png)
+
+---
+
+## Step 18 – Build and Push the Docker Image to ECR
+
+The GitHub Actions pipeline was executed successfully.
+
+The pipeline built the Docker image and pushed it to the Amazon ECR repository.
+
+The image was tagged using the Git commit SHA so that every image can be traced back to the exact source-code commit that produced it.
+
+Example:
+
+```text
+df9fd9efff7372c08abe4275cb4bb87cdec0c68a
+```
+
+This avoids relying only on the `latest` tag and provides deployment traceability.
+
+**Evidence – `18.)Successful pipeline for docker image push to ECR.png`**
+
+![Successful pipeline for docker image push to ECR](./screenshots/18.%29Successful%20pipeline%20for%20docker%20image%20push%20to%20ECR.png)
+
+---
+
+## Step 19 – Verify the Docker Image in ECR
+
+The Docker image pushed by GitHub Actions was verified in Amazon ECR.
+
+The image was available in the `cicd-git-repo` repository using the Git commit SHA as its image tag.
+
+Example image format:
+
+```text
+444068947659.dkr.ecr.us-east-1.amazonaws.com/cicd-git-repo:<commit-sha>
+```
+
+**Evidence – `19.)Image on ECR using GitHub actions.png`**
+
+![Image on ECR using GitHub actions](./screenshots/19.%29Image%20on%20ECR%20using%20GitHub%20actions.png)
+
+---
+
+## Step 20 – Create the EC2 Deployment Instance
+
+An EC2 instance was created to host the Dockerized Flask Student Registration application.
+
+The EC2 instance acts as the deployment target for the CI/CD pipeline.
+
+**Evidence – `20.)EC2 Created.png`**
+
+![EC2 Created](./screenshots/20.%29EC2%20Created.png)
+
+---
+
+## Step 21 – Install and Enable Docker on EC2
+
+Docker was successfully installed and enabled on the EC2 instance.
+
+Docker is required on EC2 to pull the application image from Amazon ECR and run the application container.
+
+**Evidence – `21.)Docker successfully installed and enabled.png`**
+
+![Docker successfully installed and enabled](./screenshots/21.%29Docker%20successfully%20installed%20and%20enabled.png)
+
+---
+
+## Step 22 – Configure IAM Permissions for Deployment
+
+The required IAM permissions were configured for the deployment process.
+
+The permissions allow the deployment identity to perform the required AWS operations, including communicating with the EC2 instance through AWS Systems Manager and interacting with Amazon ECR.
+
+This configuration supports the automated EC2 deployment performed by GitHub Actions.
+
+**Evidence – `22.)Role added to iam user.png`**
+
+![Role added to iam user](./screenshots/22.%29Role%20added%20to%20iam%20user.png)
+
+---
+
+## Step 23 – Authenticate EC2 with Amazon ECR
+
+The EC2 instance was authenticated with the Amazon ECR registry so that Docker could pull the private application image.
+
+The ECR authentication was successfully completed.
+
+The authentication command used the AWS ECR login password rather than storing an ECR password manually.
+
+**Evidence – `23.)Login success.png`**
+
+![Login success](./screenshots/23.%29Login%20success.png)
+
+---
+
+## Step 24 – Pull the Docker Image from ECR onto EC2
+
+The Docker image produced by the GitHub Actions pipeline was pulled from Amazon ECR onto the EC2 instance.
+
+The deployment uses the commit-specific image tag rather than an untraceable image version.
+
+Example:
+
+```text
+444068947659.dkr.ecr.us-east-1.amazonaws.com/cicd-git-repo:df9fd9efff7372c08abe4275cb4bb87cdec0c68a
+```
+
+**Evidence – `24.)Docker image pull on EC2.png`**
+
+![Docker image pull on EC2](./screenshots/24.%29Docker%20image%20pull%20on%20EC2.png)
+
+---
+
+## Step 25 – Verify the Application Health
+
+After starting the application container, the application was verified using `curl`.
+
+The application was checked from the EC2 instance to confirm that the application itself was responding.
+
+Example:
+
+```bash
+curl http://localhost:5000/
+```
+
+Where the application exposes a `/health` endpoint, the deployment verification can be performed using:
+
+```bash
+curl http://localhost:5000/health
+```
+
+This verification acts as the deployment verification gate. A container that starts but crashes immediately or fails to respond is treated as a failed deployment.
+
+**Evidence – `25.)Health Curl status.png`**
+
+![Health Curl status](./screenshots/25.%29Health%20Curl%20status.png)
+
+---
+
+## Step 26 – Perform Application Testing After Deployment
+
+The deployed application was tested after the EC2 deployment to confirm that the Flask application was accessible and functioning correctly.
+
+This provided functional verification after the Docker deployment.
+
+**Evidence – `26.)Sucessful application testing.png`**
+
+![Sucessful application testing](./screenshots/26.%29Sucessful%20application%20testing.png)
+
+---
+
+## Step 27 – Run the Flask Application on EC2
+
+The Flask Student Registration application was successfully deployed and was running inside a Docker container on EC2.
+
+The application port was mapped using:
+
+```bash
+-p 5000:5000
+```
+
+The mapping connects the EC2 host port to the Docker container port:
+
+```text
+EC2 Port 5000
+      ↓
+Container Port 5000
+      ↓
+Flask Application
+```
+
+The application can therefore be accessed using:
+
+```text
+http://<EC2-Public-IP>:5000
+```
+
+**Evidence – `27.)Application successfully running on EC2.png`**
+
+![Application successfully running on EC2](./screenshots/27.%29Application%20successfully%20running%20on%20EC2.png)
+
+---
+
+## Step 28 – Configure Deployment Email Notification
+
+Email notification was implemented as the final stage of the CI/CD workflow.
+
+SMTP configuration was stored securely using GitHub Secrets.
+
+The following variables were configured:
+
+```text
+MAIL_SERVER
+MAIL_PORT
+MAIL_USERNAME
+MAIL_PASSWORD
+MAIL_TO
+```
+
+For Gmail SMTP authentication, an application-specific App Password was used instead of the normal Gmail account password.
+
+The notification was configured to report the deployment outcome.
+
+### Success Notification
+
+The successful deployment email includes:
+
+- Success status
+- Git commit SHA
+- Branch
+- Docker image tag
+- EC2 deployment target
+- Pipeline run information
+
+### Failure Notification
+
+The failure notification includes:
+
+- Failure status
+- Failed deployment stage
+- Git commit SHA
+- Branch
+- Pipeline/log information for troubleshooting
+
+Email credentials are not hardcoded in the workflow.
+
+**Evidence – `28.)Sucessful email notification.png`**
+
+![Sucessful email notification](./screenshots/28.%29Sucessful%20email%20notification.png)
+
+---
+
+## Step 29 – Configure Automatic Deployment Trigger
+
+The GitHub Actions workflow was configured to automatically start whenever changes are pushed to the `main` branch.
+
+The workflow trigger is configured as:
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+```
+
+This means that after the initial infrastructure configuration, the Docker image does not need to be manually built and pushed to ECR for every code change.
+
+The pipeline automatically performs the build and deployment process.
+
+---
+
+## Step 30 – Implement the Complete CI/CD Deployment Flow
+
+The completed GitHub Actions pipeline performs the deployment stages in the required order.
+
+```text
+Git Push to main
         ↓
+Checkout
+        ↓
+Install Dependencies
+        ↓
+Pytest
+        ↓
+Docker Build
+        ↓
+Tag Image with Git Commit SHA
+        ↓
+Authenticate with Amazon ECR
+        ↓
+Push Image to ECR
+        ↓
+Deploy to EC2 using SSM
+        ↓
+Pull New Image from ECR
+        ↓
+Stop Existing Container
+        ↓
+Remove Existing Container
+        ↓
+Run New Container
+        ↓
+Map Application Port
+        ↓
+Application Health Check
+        ↓
+Email Notification
+```
+
+The test stage acts as a deployment gate:
+
+```text
+Pytest
+  |
+  ├── FAIL → Pipeline stops
+  |
+  └── PASS → Docker Build → ECR Push → EC2 Deployment
+```
+
+The Docker image is tagged using the Git commit SHA, allowing the deployed image to be traced back to its source-code version.
+
+---
+
+## Step 31 – Final Deployment and Testing Result
+
+The complete CI/CD deployment was successfully implemented and verified.
+
+### Final Deployment Flow
+
+```text
 GitHub Repository
         ↓
 GitHub Actions
@@ -15,589 +544,53 @@ Checkout
         ↓
 Install Dependencies
         ↓
-Run Tests
-        ↓
-Build Docker Image
-        ↓
-Push Image to Amazon ECR
-        ↓
-Deploy Image to EC2
-        ↓
-Run Docker Container
-        ↓
-Application Health Verification
-        ↓
-Email Notification
-2. Application Setup
-2.1 Clone the Application Repository
-
-The application source code was cloned from GitHub.
-
-The repository contains the Flask application, Python dependencies, tests, and application configuration.
-
-What was done:
-
-Cloned the GitHub repository.
-Reviewed the application structure.
-Prepared the application for containerization.
-
-Screenshot: Git Clone
-
-![alt text](<1.) Git Clone.png>)
-
-2.2 Install Application Requirements
-
-The Python dependencies required by the Flask application were downloaded using requirements.txt.
-
-What was done:
-
-Installed the required Python packages.
-Verified that the application dependencies were available.
-The same requirements.txt is later used by the CI/CD pipeline.
-
-Screenshot: Requirements downloaded
-
-2.3 Create MongoDB Cluster
-
-MongoDB was configured as the database backend for the Student Registration Application.
-
-What was done:
-
-Created the MongoDB cluster.
-Configured the database environment.
-Prepared the MongoDB connection for the Flask application.
-
-Screenshot: Cluster created
-
-2.4 Configure and Run the Application
-
-The Flask application was configured to communicate with MongoDB and then started.
-
-What was changed:
-
-Updated the application configuration to use the MongoDB connection.
-Configured the required application environment values.
-Started the Flask application.
-
-Screenshot: Application running
-
-2.5 Verify Data Storage in MongoDB
-
-The application was tested by submitting data and verifying that the values were stored in MongoDB.
-
-What was verified:
-
-Flask successfully connected to MongoDB.
-Application data was successfully inserted.
-MongoDB was confirmed as the application's backend database.
-
-Screenshot: Values stored in MongoDB
-
-2.6 Verify MongoDB Health
-
-The MongoDB cluster and its nodes were checked to verify that the database infrastructure was available.
-
-Screenshot: Health nodes
-
-2.7 Run Application Tests
-
-The application test suite was executed before containerization.
-
-What was done:
-
-Executed the pytest test suite.
-Verified that the tests passed successfully.
-Confirmed that the application was ready for Dockerization.
-
-Screenshot: Test Passed
-
-3. Dockerization
-3.1 Create .dockerignore
-
-A .dockerignore file was created to prevent unnecessary files from being included in the Docker build context.
-
-What was changed:
-
-Created the .dockerignore file.
-Excluded unnecessary files/directories from the Docker build.
-
-Screenshot: Created Docker ignore file
-
-3.2 Create Dockerfile
-
-A Dockerfile was created to define how the Flask application would be packaged into a Docker image.
-
-What was created:
-
-Defined the Python base image.
-Added application files.
-Installed Python dependencies.
-Defined the application startup command.
-
-Screenshot: Dockerfile created
-
-3.3 Build Docker Image
-
-The Docker image was built from the Dockerfile.
-
-What was done:
-
-Built the Flask application into a Docker image.
-Verified successful image creation.
-Prepared the image for container testing and ECR deployment.
-
-Screenshot: Docker image created
-
-3.4 Test Docker Container
-
-The Docker image was run as a container to verify that the application worked correctly inside Docker.
-
-What was verified:
-
-Docker container started successfully.
-Flask application started successfully.
-Application was accessible through the configured port.
-
-Screenshot: Checking docker container working
-
-4. Push Application to GitHub
-
-The application and Docker configuration were pushed to GitHub.
-
-What was updated:
-
-Application source code.
-Dockerfile.
-.dockerignore.
-Tests.
-Supporting configuration.
-
-Screenshot: Push to Github
-
-5. Create GitHub Actions Workflow
-
-A GitHub Actions workflow was created to automate the CI/CD process.
-
-What was created/updated:
-
-Created the CI/CD workflow YAML file.
-Added the required pipeline stages.
-Configured the workflow to trigger automatically when code is pushed to the main branch.
-
-The workflow follows this order:
-
-Checkout
-   ↓
-Install Dependencies
-   ↓
-Test
-   ↓
-Build
-   ↓
-Push to ECR
-   ↓
-Deploy to EC2
-   ↓
-Verify Deployment
-   ↓
-Notify
-
-Screenshot: Create workflow
-
-6. Configure GitHub Secrets
-
-Sensitive values required by the pipeline were stored using GitHub Secrets.
-
-What was configured:
-
-AWS credentials.
-SMTP credentials.
-Required deployment credentials/configuration.
-
-Sensitive credentials were not hardcoded in the workflow file.
-
-Screenshot: Secrets created
-
-7. Configure Docker in GitHub Actions
-
-Docker functionality was configured in GitHub Actions.
-
-What was done:
-
-Enabled Docker operations in the workflow.
-Verified Docker was available on the GitHub Actions runner.
-Prepared the workflow to build Docker images.
-
-Screenshot: Docker working on GitHub actions
-
-8. Create Amazon ECR Repository
-
-An Amazon Elastic Container Registry repository was created to store Docker images.
-
-Repository:
-
-cicd-git-repo
-
-Region:
-
-us-east-1
-
-Screenshot: ECR repo created
-
-9. Configure AWS Authentication
-
-AWS credentials were configured so that GitHub Actions could communicate with AWS.
-
-What was configured:
-
-AWS access credentials were added to GitHub Secrets.
-GitHub Actions was granted the required AWS permissions.
-ECR operations were enabled from the pipeline.
-
-Screenshot: AWS secret access key created in Github
-
-10. Build Docker Image with Git Commit SHA
-
-The workflow was updated so that Docker images are tagged using the Git commit SHA.
-
-Instead of deploying only an ambiguous latest tag, each image receives a unique tag corresponding to the source-code commit.
-
-Example:
-
-df9fd9efff7372c08abe4275cb4bb87cdec0c68a
-
-This provides traceability between:
-
-Git Commit
-    ↓
-Docker Image
-    ↓
-ECR Image
-    ↓
-EC2 Deployment
-
-What was changed:
-
-Updated the Docker build stage.
-Added Git commit SHA as the Docker image tag.
-Updated the ECR push stage to use the same tag.
-
-Screenshot: Successful pipeline for docker image push to ECR
-
-11. Verify Docker Image in ECR
-
-The Docker image pushed by GitHub Actions was verified in Amazon ECR.
-
-What was verified:
-
-Image exists in the cicd-git-repo repository.
-Commit SHA tag is present.
-Image is available for deployment.
-
-Screenshot: Image on ECR using GitHub actions
-
-12. Create EC2 Deployment Target
-
-An EC2 instance was created to host the Dockerized Flask application.
-
-The EC2 instance acts as the deployment target for the CI/CD pipeline.
-
-Screenshot: EC2 Created
-
-13. Install Docker on EC2
-
-Docker was installed and enabled on the EC2 instance.
-
-What was configured:
-
-Installed Docker.
-Enabled Docker service.
-Verified that Docker was available to run containers.
-
-Screenshot: Docker successfully installed and enabled
-
-14. Configure IAM Permissions
-
-IAM permissions were configured for the deployment process.
-
-What was changed:
-
-Added the required permissions.
-Allowed the deployment process to interact with AWS services.
-Enabled required ECR/SSM operations.
-
-Screenshot: Role added to iam user
-
-15. Deploy Docker Image to EC2
-15.1 Pull Image from ECR
-
-The Docker image generated by GitHub Actions was pulled onto EC2.
-
-What was done:
-
-Connected to the EC2 instance.
-Authenticated Docker with Amazon ECR.
-Pulled the commit-specific Docker image.
-Verified that the image was available on EC2.
-
-Screenshot: Docker image pull on EC2
-
-15.2 Configure .env File
-
-The application environment variables were provided through a .env file on EC2.
-
-The .env file contains the application's required configuration, such as:
-
-MONGO_URI
-SECRET_KEY
-
-The .env file is kept on the EC2 instance and is not hardcoded into the Docker image.
-
-The container is started using:
-
---env-file .env
-
-This allows the same Docker image to be deployed without embedding environment-specific secrets inside the image.
-
-15.3 Authenticate Docker with ECR
-
-Docker on EC2 was authenticated against the ECR registry.
-
-The ECR login command was used to obtain temporary authentication for the registry.
-
-What was verified:
-
-ECR authentication succeeded.
-EC2 could access the private ECR repository.
-
-Screenshot: Login success
-
-15.4 Run the Docker Container
-
-The Docker container was started using the commit-specific image pulled from ECR.
-
-Example deployment command:
-
-sudo docker run -d \
-  --name flask-student-container \
-  -p 5000:5000 \
-  --env-file .env \
-  444068947659.dkr.ecr.us-east-1.amazonaws.com/cicd-git-repo:<commit-sha>
-Port Mapping
-
-The following mapping was used:
-
--p 5000:5000
-
-This means:
-
-EC2 Port 5000
-      ↓
-Container Port 5000
-      ↓
-Flask Application Port 5000
-
-What was done:
-
-Started the Docker container.
-Passed the .env configuration.
-Mapped port 5000.
-Started the Flask application inside the container.
-16. Verify Deployment
-16.1 Verify Docker Container
-
-The running container was checked using:
-
-sudo docker ps
-
-The output confirmed that the container was running and that port 5000 was mapped.
-
-Screenshot: Docker container running on EC2
-
-16.2 Verify Application Health
-
-The deployed application was verified using a curl request.
-
-The health/application endpoint was accessed from the EC2 instance to ensure that the application was actually responding.
-
-What was verified:
-
-Container is running.
-Flask process is running.
-Application responds to HTTP requests.
-Deployment is operational.
-
-Screenshot: Health Curl status
-
-This is important because a Docker container can technically start and then immediately crash. Therefore, checking the actual application response provides a proper deployment verification gate.
-
-16.3 Access Application from Browser
-
-After verifying the container and application response, the application was accessed using the EC2 public IP and port 5000.
-
-Example:
-
-http://<EC2-Public-IP>:5000
-
-The Student Registration System was successfully displayed.
-
-Screenshot: Application successfully running on EC2
-
-17. Email Notification
-17.1 Configure SMTP
-
-SMTP settings were stored in GitHub Secrets rather than being hardcoded into the workflow.
-
-The configured values were:
-
-MAIL_SERVER
-MAIL_PORT
-MAIL_USERNAME
-MAIL_PASSWORD
-MAIL_TO
-
-For Gmail, an App Password was used instead of the normal Gmail password.
-
-17.2 Update Email Notification Code
-
-The GitHub Actions workflow was updated to send an email after the pipeline execution.
-
-What was changed:
-
-Added the email notification action.
-Connected SMTP credentials through GitHub Secrets.
-Added customized success and failure messages.
-Included actual build/deployment information in the notification.
-
-The success email confirms that the deployment completed successfully.
-
-Screenshot: Successful email notification
-
-18. Final CI/CD Pipeline
-
-The final GitHub Actions pipeline implements the required stages in order.
-
-18.1 Checkout
-
-Pulls the latest source code from the main branch.
-
-18.2 Install Dependencies
-
-Installs Python dependencies from:
-
-requirements.txt
-18.3 Test
-
-Runs the pytest test suite.
-
-If a test fails, the pipeline stops and does not continue to Docker build or deployment.
-
-18.4 Build
-
-Builds the Docker image and tags it using the Git commit SHA.
-
-18.5 Push to ECR
-
-Authenticates with Amazon ECR and pushes the commit-specific image.
-
-18.6 Deploy to EC2
-
-The deployment process:
-
-Connects to EC2.
-Authenticates with ECR.
-Pulls the new image.
-Stops the existing container.
-Removes the existing container.
-Starts the new container.
-Uses the .env configuration.
-Maps port 5000.
-18.7 Deployment Verification
-
-The application is checked after deployment using the application/health endpoint.
-
-The deployment is considered successful only when the application actually responds successfully.
-
-18.8 Notify
-
-An email is sent containing the deployment result and relevant build details.
-
-19. Automatic Deployment Trigger
-
-The workflow is configured to automatically execute whenever code is pushed to the main branch.
-
-The final automated flow is:
-
-Git Push
-   ↓
-GitHub
-   ↓
-GitHub Actions
-   ↓
-Checkout
-   ↓
-Install Dependencies
-   ↓
 Pytest
-   ↓
+        ↓
 Docker Build
-   ↓
-ECR Push
-   ↓
-EC2 Deployment
-   ↓
-Container Restart
-   ↓
+        ↓
+Amazon ECR
+        ↓
+EC2
+        ↓
+Docker Container
+        ↓
+Flask Application
+        ↓
 Health Check
-   ↓
+        ↓
 Email Notification
+```
 
-Therefore, after the initial infrastructure configuration, the Docker image does not need to be manually built, pushed to ECR, pulled on EC2, and started for every code change.
+### Final Testing Results
 
-The GitHub Actions pipeline automates that entire process.
+| Validation | Result |
+|---|---|
+| Application setup | Passed |
+| MongoDB cluster creation | Passed |
+| MongoDB connectivity | Passed |
+| Application data storage | Passed |
+| MongoDB health verification | Passed |
+| Pytest suite | Passed |
+| Docker image build | Passed |
+| Local Docker container test | Passed |
+| GitHub repository push | Passed |
+| GitHub Actions workflow | Passed |
+| Amazon ECR repository | Created |
+| Docker image pushed to ECR | Passed |
+| EC2 instance creation | Completed |
+| Docker installation on EC2 | Passed |
+| IAM configuration | Completed |
+| ECR authentication from EC2 | Passed |
+| Docker image pull on EC2 | Passed |
+| Application health check | Passed |
+| Post-deployment application testing | Passed |
+| Application running on EC2 | Passed |
+| Email notification | Passed |
 
-20. Deployment Architecture
-                  ┌─────────────────────┐
-                  │   GitHub Repository  │
-                  └──────────┬──────────┘
-                             │
-                         git push
-                             │
-                             ▼
-                  ┌─────────────────────┐
-                  │   GitHub Actions    │
-                  │                     │
-                  │ Checkout            │
-                  │ Install Dependencies│
-                  │ Test                │
-                  │ Docker Build        │
-                  └──────────┬──────────┘
-                             │
-                             ▼
-                  ┌─────────────────────┐
-                  │    Amazon ECR       │
-                  │                     │
-                  │ cicd-git-repo       │
-                  │                     │
-                  │ <commit-sha>        │
-                  └──────────┬──────────┘
-                             │
-                       Pull Image
-                             │
-                             ▼
-                  ┌─────────────────────┐
-                  │      EC2            │
-                  │                     │
-                  │ Docker Container    │
-                  │ Flask Application   │
-                  │ Port 5000           │
-                  └──────────┬──────────┘
-                             │
-                         Health Check
-                             │
-                             ▼
-                  ┌─────────────────────┐
-                  │ Email Notification  │
-                  └─────────────────────┘
+### Final Outcome
 
-This completes the end-to-end GitHub → GitHub Actions → ECR → EC2 → Docker → Application → Verification → Email deployment workflow.
+The Flask Student Registration application was successfully containerized, stored in Amazon ECR, deployed to EC2, verified after deployment, and integrated with automated email notification.
+
+The final CI/CD implementation removes the need to manually repeat the Docker build, ECR push, EC2 image pull, and container restart process for every code change.
+
+A push to the `main` branch now initiates the automated deployment workflow.

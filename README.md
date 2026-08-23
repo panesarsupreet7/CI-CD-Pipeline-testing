@@ -1,4 +1,313 @@
-# CI/CD Deployment – Flask Student Registration Application
+# Flask Student Registration – AWS CI/CD Deployment
+
+## Project Overview
+
+This project implements an end-to-end CI/CD pipeline for a Flask-based Student Registration application.
+
+The application uses **MongoDB** for data storage and is containerized using **Docker**. GitHub is used as the source-code repository, while **GitHub Actions** automates the complete build and deployment process.
+
+The Docker image is built by GitHub Actions, tagged using the Git commit SHA, and pushed to **Amazon ECR**. The latest application image is then deployed to an **Amazon EC2** instance, where it runs as a Docker container.
+
+The deployment is verified using an application health check, and an email notification is sent after the deployment process.
+
+### Objective
+
+The main objective is to eliminate the need for manually repeating the following operations for every code change:
+
+- Build the Docker image
+- Push the image to Amazon ECR
+- Connect to EC2
+- Pull the new image
+- Stop the previous container
+- Start the new container
+- Verify that the application is running
+
+These activities are automated through the GitHub Actions CI/CD pipeline.
+
+---
+
+## CI/CD Flow
+
+```text
+                         CODE CHANGE
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │ GitHub Repository│
+                    │   Push to main   │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │  GitHub Actions  │
+                    │    CI/CD Job     │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │  Checkout Code   │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │ Install Python   │
+                    │   Dependencies   │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │      Pytest      │
+                    │    Test Gate     │
+                    └────────┬─────────┘
+                             │
+                       Tests Passed
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │   Docker Build   │
+                    │  Image + SHA Tag │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │   Amazon ECR     │
+                    │  cicd-git-repo   │
+                    └────────┬─────────┘
+                             │
+                        Push Image
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │       EC2        │
+                    │ Deployment Host  │
+                    └────────┬─────────┘
+                             │
+                       Pull New Image
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │ Docker Container │
+                    │   Flask App      │
+                    │     :5000        │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │  Health Check    │
+                    │  curl /health    │
+                    └────────┬─────────┘
+                             │
+                       Health Passed
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │ Email Notification│
+                    │     SUCCESS      │
+                    └──────────────────┘
+```
+
+---
+
+## Deployment Architecture
+
+```text
+                         ┌─────────────────────┐
+                         │       GitHub        │
+                         │  Source Repository  │
+                         └──────────┬──────────┘
+                                    │
+                              Git Push
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │   GitHub Actions    │
+                         │                     │
+                         │ Checkout            │
+                         │ Dependencies        │
+                         │ Pytest              │
+                         │ Docker Build        │
+                         │ ECR Push            │
+                         │ EC2 Deployment      │
+                         │ Health Check        │
+                         │ Email Notification  │
+                         └──────────┬──────────┘
+                                    │
+                              Docker Image
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │     Amazon ECR      │
+                         │   cicd-git-repo     │
+                         └──────────┬──────────┘
+                                    │
+                              Pull Image
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │     Amazon EC2      │
+                         │                     │
+                         │  Docker Container   │
+                         │         │           │
+                         │         ▼           │
+                         │   Flask Application │
+                         │      Port 5000      │
+                         └──────────┬──────────┘
+                                    │
+                              Health Check
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │ Email Notification  │
+                         │  Deployment Result  │
+                         └─────────────────────┘
+
+                              ┌─────────────┐
+                              │   MongoDB   │
+                              │  Database   │
+                              └──────▲──────┘
+                                     │
+                              Flask Application
+```
+
+---
+
+## Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| **Python / Flask** | Web application |
+| **MongoDB** | Application database |
+| **Pytest** | Application testing |
+| **Docker** | Application containerization |
+| **GitHub** | Source-code management |
+| **GitHub Actions** | CI/CD automation |
+| **Amazon ECR** | Docker image registry |
+| **Amazon EC2** | Application hosting |
+| **AWS Systems Manager (SSM)** | Automated EC2 deployment |
+| **SMTP / Gmail** | Deployment notifications |
+
+---
+
+## Key CI/CD Design
+
+The pipeline follows a **test-before-deploy** approach.
+
+```text
+Code Push
+    │
+    ▼
+Run Tests
+    │
+    ├──────── Tests Failed ────────► STOP
+    │
+    ▼
+Build Docker Image
+    │
+    ▼
+Push Image to ECR
+    │
+    ▼
+Deploy Image to EC2
+    │
+    ▼
+Start Docker Container
+    │
+    ▼
+Application Health Check
+    │
+    ├──────── Health Failed ───────► Deployment Failed
+    │
+    ▼
+Send Success Notification
+```
+
+This ensures that a Docker image being successfully built or pushed to ECR is **not by itself considered a successful deployment**. The application must also start successfully and pass the post-deployment verification.
+
+---
+
+## Image Versioning
+
+Docker images are tagged using the **Git commit SHA**.
+
+Example:
+
+```text
+444068947659.dkr.ecr.us-east-1.amazonaws.com/cicd-git-repo:df9fd9efff7372c08abe4275cb4bb87cdec0c68a
+```
+
+Using the commit SHA provides traceability between:
+
+```text
+Git Commit
+     ↓
+Docker Image
+     ↓
+ECR Image
+     ↓
+EC2 Deployment
+```
+
+This makes it possible to identify exactly which source-code version is running on EC2.
+
+---
+
+## Application Port Mapping
+
+The Flask application runs on port `5000` inside the Docker container.
+
+During deployment, the port is mapped as:
+
+```bash
+-p 5000:5000
+```
+
+This maps:
+
+```text
+EC2 Host Port 5000
+        │
+        ▼
+Docker Container Port 5000
+        │
+        ▼
+Flask Application
+```
+
+The deployed application can therefore be accessed using:
+
+```text
+http://<EC2-Public-IP>:5000
+```
+
+---
+
+## Deployment Result
+
+The final implementation successfully demonstrates:
+
+```text
+GitHub
+   ↓
+GitHub Actions
+   ↓
+Automated Testing
+   ↓
+Docker Build
+   ↓
+Amazon ECR
+   ↓
+EC2 Deployment
+   ↓
+Docker Container
+   ↓
+Flask Application
+   ↓
+Health Verification
+   ↓
+Email Notification
+```
+
+The remainder of this document provides the detailed implementation steps and screenshots for each stage of the deployment.
 
 ## Step 1 – Clone the Application Repository
 

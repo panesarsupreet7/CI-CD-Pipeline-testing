@@ -59,7 +59,7 @@ jobs:
       - name: Tag and push Docker image to ECR
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: flask-student-app
+          REPOSITORY: cicd-git-repo
           IMAGE_TAG: latest
         run: |
           docker tag flask-student-app:latest $REGISTRY/$REPOSITORY:$IMAGE_TAG
